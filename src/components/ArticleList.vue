@@ -272,7 +272,7 @@ async function deleteCheckedArticles(type) {
 .article-details > div+div {
     margin-top: 0.5em;
 }
-.article-checkbox {
+.article-checkbox.article-checkbox {
     margin-right: 0.5em;
 }
 .article-title {
