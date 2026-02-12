@@ -1,5 +1,5 @@
 <template>
-  <div class="migration-overlay">
+  <div class="migration-overlay" v-if="show">
     <div class="migration-card">
       <div class="migration-header">
         <h2>🚀 My Diary App 已升级！</h2>
@@ -29,6 +29,23 @@
           @click="exportToFile"
            v-if="!cleared"
         >导出到文件（可选）</el-button></div>
+
+        <div v-if="!cleared && hasSavedPass">
+          <b style="color: red">重要提示！！！</b>
+          <span>该操作只会<b>导出您的访问凭据</b>，不会<b>导出您“已保存的密码”</b>！</span>
+          <br>
+          <b>如果您之前使用了“保存密码”功能存储重要的密码，并且您不再记得它们除了本应用程序</b>
+          <span>，那么您需要</span>
+          <b>手动迁移这些密码</b>。
+          <br>
+          <b>迁移步骤：</b>
+          <p>转到<b>当前应用</b>“设置”页面，手动保存“已保存的密码”，存储在安全的位置，然后再继续操作</p>
+          <ElButton class="copy-btn" type="primary" @click="goToSettings">点击以转到“设置”页面。</ElButton>
+          <br>
+          <span v-if="!confirmedSavedPass">在您完成此操作后，您需要重新加载当前页面以重新打开迁移对话框，然后点击下方按钮确认。（务必完成此步骤：存储在当前域名的旧数据可能不再安全。）</span>
+          <br>
+          <El-Button v-if="!confirmedSavedPass" class="copy-btn" @click="confirmedSavedPass = true">点击以确认您已经完成了此步骤。</El-Button>
+        </div>
         
         <div class="step">
           <span class="step-num">2</span>
@@ -39,7 +56,7 @@
           plain 
           class="copy-btn"
           @click="clearCredentials"
-          :disabled="!exported || cleared"
+          :disabled="!canClear"
         >
           {{ cleared ? '✅ 已清除' : (exported ? '📋 一键清除凭据' : '！ 请务必先导出数据！') }}
         </el-button>
@@ -65,16 +82,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { u } from './user.js'
 import { db_name, setShouldShowExpiredDialog } from './userdata.js'
+import { useRouter } from 'vue-router'
 
-const neverShow = ref(false)
+const show = ref(true)
 const copying = ref(false)
 const copied = ref(false)
 const exported = ref(false)
+const hasSavedPass = ref(false)
+const confirmedSavedPass = ref(false)
+const canClear = computed(() =>
+  ((exported.value) && (hasSavedPass.value ? confirmedSavedPass.value : true))
+  && (!cleared.value))
 const cleared = ref(false)
+
+const router = useRouter()
+
+onMounted(async () => {
+  hasSavedPass.value = (!!(await u.get("saved_passwords"))) || (!!(await u.get("saved_secret_passwords")));
+})
 
 function checkCredentials(jsonString) {
   if (jsonString === '{}') throw "凭据为空。如果您之前从来没有存放过凭据，那么您无需迁移，直接访问新域名即可。如果您之前存放过凭据，那么请确保您刚才输入了正确的 PIN 。没有 PIN ，我们也无法解密您的数据。"
@@ -130,6 +159,11 @@ async function exportToFile() {
   } catch (error) {
     ElMessage.error('导出失败：' + error)
   }
+}
+
+function goToSettings() {
+  router.replace('/settings');
+  show.value = false;
 }
 
 async function clearCredentials() {

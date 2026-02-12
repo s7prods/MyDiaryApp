@@ -10,7 +10,7 @@
                 </el-icon></el-button>
         </nav>
         <div class="content">
-            <router-view v-show="0" @update-title="updateTitle" @update-credits="updateCredits" :credits="credits"></router-view>
+            <router-view @update-title="updateTitle" @update-credits="updateCredits" :credits="credits"></router-view>
             <Mig />
         </div>
 
