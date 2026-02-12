@@ -179,7 +179,7 @@ import { exportContent } from '../ossapi/filelistapi'
 import { ElDatePicker, ElMessage, ElMessageBox, ElOption, ElPopover } from 'element-plus'
 import { u } from '../user.js';
 import { get_secret_default_id, get_secret_info, save_entries_index, load_entries_index, signit, ask_secret_key_by_id } from '../entries'
-import { decrypt_blob, decrypt_data, encrypt_blob, encrypt_data, encrypt_file, Wrappers } from 'simple-data-crypto/builder'
+import { decrypt_blob, decrypt_data, encrypt_blob, encrypt_data, encrypt_file, Wrappers } from 'simple-data-crypto'
 
 const router = useRouter()
 const emit = defineEmits(['update-title'])

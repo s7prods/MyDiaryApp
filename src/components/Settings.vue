@@ -88,7 +88,7 @@
 import { h, onMounted, ref } from 'vue'
 import { ElCard, ElButton, ElMessageBox, ElMessage } from 'element-plus'
 import { dynamic_decrypt, is_entries_encrypted, load_entries_index, set_this_time_password, signit } from '../entries'
-import { encrypt_blob, get_random_uint8_number } from 'simple-data-crypto/builder'
+import { encrypt_blob, get_random_uint8_number } from 'simple-data-crypto'
 import { generateQuestion } from '../relation'
 import { u, IsPINSet, SetPIN, ChangePIN, ClearPIN, ForgetPIN, IsPINVerified } from '../user.js';
 

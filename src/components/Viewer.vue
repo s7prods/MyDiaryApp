@@ -255,7 +255,7 @@ onMounted(async () => {
 
 import { watch } from 'vue'
 import { get_secret_info, get_secret_key, signit } from '../entries'
-import { decrypt_blob, decrypt_data } from 'simple-data-crypto/builder'
+import { decrypt_blob, decrypt_data } from 'simple-data-crypto'
 
 watch(() => props.articleId, async () => {
     if (!(props.articleId === article.value.id)) 

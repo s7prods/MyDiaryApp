@@ -1,4 +1,4 @@
-import { decrypt_data, encrypt_data, get_random_bytes, hexlify } from 'simple-data-crypto/builder';
+import { decrypt_data, encrypt_data, get_random_bytes, hexlify } from 'simple-data-crypto';
 import { db } from './userdata.js';
 import { app_event } from './eventing.js';
 import { IPC_Invoke, IPC_Register } from './ipcman.js';

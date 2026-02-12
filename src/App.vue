@@ -88,7 +88,7 @@ import { ref, onMounted, nextTick, h, computed } from 'vue'
 import { Expand, Fold } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElCheckbox, ElMessage, ElMessageBox } from 'element-plus'
-import { VERSION } from 'simple-data-crypto/builder'
+import { VERSION } from 'simple-data-crypto'
 import { u } from './user.js';
 import { app_event } from './eventing.js'
 const router = useRouter()
