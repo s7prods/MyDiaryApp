@@ -18,7 +18,7 @@ import './secret-elementary.js'
 import './webmanifest.js'
 import './ipcman.js'
 
-globalThis.appid = 'top.clspd.diary'
+globalThis.appid = 'com.mydiary.mydiaryapp'
 globalThis.uuid = 'fddd697a-d914-4e6b-82f4-52bf7bab296b'
 
 zIndexManager.config(3001, 3300);
