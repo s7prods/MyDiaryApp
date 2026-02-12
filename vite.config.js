@@ -30,5 +30,4 @@ export default defineConfig({
       target: 'es2022' // 确保设置为支持 top-level await 的版本
     },
   },
-  base: '/webstatic/my-diary-app/'
 })
