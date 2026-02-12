@@ -45,6 +45,7 @@ fixSelectedNoteCss.replace(`x-my-diary-app-file-reference.ProseMirror-selectedno
 }`);
 document.adoptedStyleSheets.push(fixSelectedNoteCss);
 
+import 'simple-data-crypto-file-preview';
 import { ask_secret_key_by_id, signit } from './entries';
 
 const scm = Object.create(null); // Security Context Manager
@@ -253,7 +254,6 @@ export class HTMLXMyDiaryAppFileReferenceElement extends HTMLElement {
         }
         if (type === 'video') type = 'video/mp4';
         // if (typeof user_key !== 'string') throw '密钥异常';
-        await import('simple-data-crypto-file-preview');
         await this.#preview.load(async (/** @type {number} */ start, /** @type {number} */ end) => {
             const resp = await fetch(await signit(target), {
                 headers: { Range: `bytes=${start}-${end - 1}` }
