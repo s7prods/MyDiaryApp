@@ -10,7 +10,8 @@
                 </el-icon></el-button>
         </nav>
         <div class="content">
-            <router-view @update-title="updateTitle" @update-credits="updateCredits" :credits="credits"></router-view>
+            <router-view v-show="0" @update-title="updateTitle" @update-credits="updateCredits" :credits="credits"></router-view>
+            <Mig />
         </div>
 
         <ElDrawer v-model="showAppMenu" :with-header="false" direction="rtl" size="300px">
@@ -91,6 +92,7 @@ import { ElCheckbox, ElMessage, ElMessageBox } from 'element-plus'
 import { VERSION } from 'simple-data-crypto/builder'
 import { u } from './user.js';
 import { app_event } from './eventing.js'
+import Mig from './Mig.vue'
 const router = useRouter()
 
 const title = ref('')

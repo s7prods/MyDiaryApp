@@ -4,6 +4,11 @@
 export const db_name = 'MyDiaryApp_web-data_' + globalThis.location.pathname.replace(/(\/|\\|\:|\;|\"|\'|\+|\=|\[|\]|\(|\)|\,|\.)/g, '_');
 export const version = 1;
 
+let shouldShowExpiredDialog = true;
+export function setShouldShowExpiredDialog(value) {
+    shouldShowExpiredDialog = value;
+}
+
 
 import { openDB } from 'idb';
 
@@ -49,6 +54,9 @@ await new Promise(function (resolve, reject) {
         },
         blocking(currentVersion, blockedVersion, event) {
             db.close();
+            if (!shouldShowExpiredDialog) {
+                return;
+            }
             (el_dbExpired.querySelector('[data-content]') || {}).innerText = `currentVersion = ${currentVersion}, blockedVersion = ${blockedVersion}`;
             el_dbExpired.showModal();
         },
