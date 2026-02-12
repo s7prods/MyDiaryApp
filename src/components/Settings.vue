@@ -413,6 +413,11 @@ async function forgetPIN() {
             ElMessage.error('输入内容错误！');
             return;
         }
+        await ElMessageBox.confirm('请确认此操作。', '忘记 PIN', {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'error',
+        });
     } catch { return }
     try {
         await ForgetPIN();

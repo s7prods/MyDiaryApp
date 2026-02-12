@@ -2,10 +2,10 @@ import { createApp } from 'vue'
 import { zIndexManager } from 'resizable-widget';
 import './style.css'
 import App from './App.vue'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+// import ElementPlus from 'element-plus'
+// import 'element-plus/dist/index.css'
 import './tailwind-output.css'
-import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+// import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import router from './router'
 import './router/leave-down.js'
 import './entries.js'
@@ -22,9 +22,9 @@ zIndexManager.config(3001, 3300);
 
 
 const app = createApp(App)
-app.use(ElementPlus, {
-    locale: zhCn,
-})
+// app.use(ElementPlus, {
+//     locale: zhCn,
+// })
 app.use(router)
 app.mount('#app')
 
