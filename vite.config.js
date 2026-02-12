@@ -43,6 +43,7 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash].s.[ext]',
       },
     },
+    manifest: 'internal/manifest.json',
   },
   optimizeDeps: {
     esbuildOptions: {

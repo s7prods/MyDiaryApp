@@ -18,10 +18,14 @@ import './secret-elementary.js'
 import './webmanifest.js'
 import './ipcman.js'
 
-globalThis.appid = 'com.mydiary.mydiaryapp'
+globalThis.appid = 'top.clspd.diary'
 globalThis.uuid = 'fddd697a-d914-4e6b-82f4-52bf7bab296b'
 
 zIndexManager.config(3001, 3300);
+
+if (globalThis.navigator.serviceWorker && typeof globalThis.navigator.serviceWorker.register === 'function') {
+    globalThis.navigator.serviceWorker.register('/sw.js', { scope: '/' });
+}
 
 
 const app = createApp(App)

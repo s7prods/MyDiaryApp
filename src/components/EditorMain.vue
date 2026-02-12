@@ -816,7 +816,7 @@ const guess_type_by_name = async function (name = '') {
         const ext = name.split(".").pop().toLowerCase();
         let mime_db = await u.get("mime_db");
         if (!mime_db) {
-            mime_db = await (await fetch("assets/mime_db-lite.json")).json();
+            mime_db = await (await fetch("resource/mime_db-lite@1.0.0.json")).json();
             await u.set("mime_db", mime_db);
         }
         for (const k in mime_db) {

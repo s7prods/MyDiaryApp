@@ -1,0 +1,175 @@
+// This file comes from https://github.com/clspd/OpenChatWorkbench/blob/cab79b63412909570a55570c005af8edeff99fd6/public/sw.js
+/*
+MIT License, Copyright (c) 2026 [@chcs1013](https://github.com/chcs1013)
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+/// <reference lib="webworker" />
+const CONFIG_FILE = '/internal/init_config.js',
+// update ts if the external file is changed (in order to bust the cache); no need to update ts if sw.js itself changed
+    CONFIG_FILE_TS = '202602120630+0800',
+    CONFIG_FILE_URL = CONFIG_FILE + '?ts=' + CONFIG_FILE_TS;
+importScripts(CONFIG_FILE_URL);
+
+// @ts-ignore
+const /** @type {ServiceWorkerGlobalScope & typeof globalThis} */global = (typeof globalThis !== 'undefined' && globalThis !== null) ? globalThis : (typeof self !== 'undefined' && self !== null) ? self : (() => { throw new Error('Unable to locate global object') })();
+const /** @type {string} */CACHE_NAME = appInitConfig.CACHE_PREFIX + appInitConfig.CACHE_VERSION;
+
+const /** @type {Record<string, string>} */HTML_SANITIZER_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', }, HTML_SANITIZER = new RegExp('[' + Object.keys(HTML_SANITIZER_MAP).join('') + ']', 'ig');
+const /** @type {(t: any) => string} */sanitizeHtml = t => ((t = String(t)), t.replace(HTML_SANITIZER, (/** @type {string} */match) => HTML_SANITIZER_MAP[match]));
+const REMOVE_CACHE_STAT = [0, 4, 5, 6, 10, 11, 12, 13, 14, 15, 16, 17, 18, 22, 26, 28, 31, 51];
+
+global.addEventListener('install', (/** @type {ExtendableEvent} */event) => {
+    global.console.log("[sw]", 'install');
+    global.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {   
+            return cache.addAll(appInitConfig.FILES_TO_CACHE_ON_STARTUP);
+        }).catch(e => global.console.warn("[sw]", 'Failed to cache some resources:', e))
+    );
+});
+
+global.addEventListener('activate', (/** @type {ExtendableEvent} */event) => {
+    global.console.log("[sw]", 'activate');
+    event.waitUntil((async () => {
+        await global.clients.claim();
+        const cacheNames = await caches.keys();
+        await Promise.all(
+            cacheNames.filter((cacheName) => {
+                return cacheName.startsWith(appInitConfig.CACHE_PREFIX) && cacheName !== CACHE_NAME;
+            }).map((cacheName) => {
+                return caches.delete(cacheName);
+            })
+        );
+    })());
+});
+
+global.addEventListener('fetch', (/** @type {FetchEvent} */event) => {
+    const req = event.request; let origin, pathname, hostname;
+    try {
+        ({origin, pathname, hostname} = new URL(req.url));
+        if (origin !== global.location.origin) return; // not same origin, ignore
+    } catch {
+        return; // invalid url, ignore
+    }
+    const isSimple = req.method === 'GET' && !req.headers.has('range');
+    // handle internal rewrites first
+    for (const rewritePath of Reflect.ownKeys(rewriteMap)) {
+        if (pathname === rewritePath) {
+            const isHandled = rewriteMap[rewritePath]?.(event, isSimple);
+            if (isHandled) return;
+        }
+    }
+    // check if it is a "simple" request
+    if (!isSimple) return;
+    // check if the rewuester wants to ignore cache
+    if (req.cache === 'no-store') return;
+    // handle the request
+    event.respondWith((async () => {
+        const cache = await caches.open(CACHE_NAME);
+        // check if the domain is in the skip cache list
+        const cachedResponse = (appInitConfig.SKIP_CACHE_DOMAIN.includes(hostname)) ?
+            null : await cache.match(req, { ignoreSearch: false, ignoreMethod: false, });
+        if (cachedResponse) try {
+            // check if the object is immutable
+            const pathname = new URL(req.url).pathname;
+            if (req.cache !== 'no-cache')
+            for (const i of appInitConfig.IMMUTABLE_CACHE_FILE_MATCH) {
+                if (i.test(pathname)) {
+                    // immutable cache file, return cached response directly
+                    return cachedResponse;
+                }
+            }
+            // check if we have internet connection
+            if (!global.navigator.onLine) return cachedResponse;
+            // not immutable, check the latest version first
+            // try to get ETag, or Last-Modified header
+            const etag = cachedResponse.headers.get('ETag');
+            const lastModified = cachedResponse.headers.get('Last-Modified') || cachedResponse.headers.get('Date');
+            const headers = new Headers(req.headers);
+            if (etag) headers.set('If-None-Match', etag);
+            else if (lastModified) headers.set('If-Modified-Since', lastModified);
+            else {
+                // no ETag or Last-Modified header, we should fallback to network
+                const resp = await fetch(req);
+                if (resp.ok) {
+                    const clone = resp.clone(); // we must clone first, otherwise the body will be consumed
+                    await cache.put(req, clone);
+                }
+                return resp;
+            }
+            // test the response status
+            const resp = await fetch(req, { headers });
+            if (resp.status === 304) {
+                // not modified, return cached response
+                return cachedResponse;
+            } else if (resp.ok) {
+                // modified, return new response
+                const clone = resp.clone(); // clone first
+                await cache.put(req, clone);
+                return resp;
+            } else if (resp.status >= 500 && resp.status <= 599) {
+                // 5xx status, server error; fallback to cache
+                return cachedResponse;
+            } else if (resp.status >= 400 && resp.status <= 499) {
+                // 4xx status, client error
+                if (REMOVE_CACHE_STAT.includes(resp.status - 400)) // remove the cache
+                    await cache.delete(req);
+                return resp;
+            } else {
+                // other status
+                return resp;
+            }
+        } catch {
+            return cachedResponse; // fallback when failure, e.g., network error
+        } // end `if (cachedResponse) try`
+        // the request was not cached, fetch it from network
+        if ((!global.navigator.onLine) && req.mode === 'navigate') { // fast fail
+            return (await cache.match(new Request('/resource/offline@1.0.0.html'))) || new Response(new Blob([offlineNetworkErrorPage], { type: 'text/html' }));
+        }
+        try {
+            const resp = await fetch(req);
+            if (resp.ok) {
+                const clone = resp.clone(); // clone first
+                await cache.put(req, clone);
+            }
+            return resp;
+        }
+        catch (/** @type {any} */e) {
+            if (req.mode === 'navigate') {
+                return new Response(new Blob([failedNetworkErrorPageBuilder(String(e ? (e.stack ? (String(e) + '\n' + e.stack) : e) : e))], { type: 'text/html' }));
+            }
+            throw e; // this is expected
+        }
+    })());
+});
+
+
+/**
+ * @type {Record<string, (event: FetchEvent, isSimple: boolean) => boolean>}
+ */
+var rewriteMap = {
+    "/internal/w/running"(event, isSimple) {
+        if (!isSimple) return false; // not simple request, ignore
+        event.respondWith(new Response(new Blob(["true"], { type: "application/json" })));
+        return true; // rewrite done
+    },
+    "/internal/init_config.js"(event, isSimple) {
+        if (!isSimple) return false;
+        try {
+            const url = new URL(event.request.url);
+            const ts = url.searchParams.get('ts');
+            if (!ts) return false;
+            event.respondWith(caches.open(CACHE_NAME).then(cache => cache.match(event.request, { ignoreSearch: false }).then(resp => resp ?? fetch(event.request).then(resp => resp.ok ? (cache.put(event.request, resp.clone()).then(() => resp)) : resp))));
+            return true;
+        } catch { return false }
+    },
+};
+
+
+var offlineNetworkErrorPage = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Error</title></head><body><h1>You are offline</h1><p>The page you request couldn't be loaded because you are offline. Please connect to the Internet and reload the page.</p></body></html>`;
+var failedNetworkErrorPageBuilder = (/** @type {string} */ errMsg) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Error</title></head><body><h1>Unable to access page</h1><p>The requested page couldn't be loaded because of an error. Please check your Internet connection and try again. If the error continues to occur, please check the browser console.</p><div>Technical information:</div><div style="font-family: Consolas, monospace; white-space: pre-wrap; word-break: break-all">${sanitizeHtml(errMsg)}</div></body></html>`;
+
+
