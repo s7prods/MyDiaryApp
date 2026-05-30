@@ -249,7 +249,7 @@ export class HTMLXMyDiaryAppFileReferenceElement extends HTMLElement {
             if (isNaN(i)) throw '文件大小不是一个有效的数字。';
             return i;
         })();
-        if (file_size > 100 * 1024 * 1024 && (!type.startsWith('video'))) {
+        if (file_size > 200 * 1024 * 1024 && (!type.startsWith('video'))) {
             throw '文件过大，无法预览。';
         }
         if (type === 'video') type = 'video/mp4';
